@@ -1,6 +1,7 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 // Disable image smoothing for crisp pixel art, especially important when scaling
+// This will be overridden if high-res images are used on mobile and smoothing is desired.
 ctx.imageSmoothingEnabled = false;
 
 // Check if mobile device based on user agent
@@ -18,14 +19,36 @@ const playerImages = {
   happy: new Image(),
   dead: new Image()
 };
-playerImages.normal.src = 'image/rui_normal.png';
-playerImages.happy.src = 'image/rui_closing_eyes.png';
-playerImages.dead.src   = 'image/rui_dead.png';
+
+// Define image paths based on device type
+const playerImageBase = 'image/rui_';
+// Changed highResSuffix to match user's provided file names (e.g., rui_normal_92.png)
+const highResSuffix = '_92.png'; 
+const lowResSuffix = '.png'; // Suffix for low-resolution images (e.g., 32x32)
+
+// Determine which image set to use
+if (isMobile) {
+  // For mobile, load the user-provided 92x92 high-resolution images for a smoother look
+  playerImages.normal.src = playerImageBase + 'normal' + highResSuffix;
+  playerImages.happy.src = playerImageBase + 'closing_eyes' + highResSuffix;
+  playerImages.dead.src = playerImageBase + 'dead' + highResSuffix;
+  // Enable image smoothing for smoother appearance when using high-res images
+  ctx.imageSmoothingEnabled = true; 
+} else {
+  // For desktop, use the original low-resolution images (assuming they are 32x32)
+  playerImages.normal.src = playerImageBase + 'normal' + lowResSuffix;
+  playerImages.happy.src = playerImageBase + 'closing_eyes' + lowResSuffix;
+  playerImages.dead.src = playerImageBase + 'dead' + lowResSuffix;
+  // Ensure image smoothing is off for crisp pixel art on desktop
+  ctx.imageSmoothingEnabled = false; 
+}
+
 
 // Load good item images
 const goodItemImages = [
   new Image(), new Image(), new Image(), new Image()
 ];
+// For simplicity, good/bad items will use the same resolution regardless of device
 goodItemImages[0].src = 'image/rui_ramune.png';
 goodItemImages[1].src = 'image/nene_ramune.png';
 goodItemImages[2].src = 'image/tsukasa_ramune.png';
@@ -64,8 +87,8 @@ const imagePromises = [
 
 // Game state variables
 const player = {
-  // Initial position and size, will be adjusted by resizeCanvas
-  x: 160, y: 500, width: 96, height: 96, speed: 300,
+  // Initial position and size, will be adjusted by resizeCanvas and image loading
+  x: 0, y: 0, width: 96, height: 96, speed: 300, // Default width/height, will be adjusted
   state: 'normal', // 'normal', 'happy', 'dead'
   stateTimer: 0, // Timer for 'happy' state duration
   jumpOffset: 0, // Vertical offset for jump animation
@@ -90,22 +113,21 @@ let timeElapsed = 0; // Total time elapsed in the current game
 
 // Function to adjust canvas resolution to match its CSS display size
 function resizeCanvas() {
-  // Get the computed style of the canvas element
   const style = window.getComputedStyle(canvas);
-  // Parse the width and height from the computed style
   const displayWidth = parseFloat(style.width);
   const displayHeight = parseFloat(style.height);
 
-  // Set the canvas's internal drawing dimensions to match its CSS display dimensions
-  // This is crucial for avoiding blurriness.
-  canvas.width = displayWidth;
-  canvas.height = displayHeight;
-  console.log(`Canvas resized to: ${canvas.width}x${canvas.height}`);
-  
-  // Recalculate player position to be centered horizontally and at the bottom
-  player.x = canvas.width / 2 - player.width / 2;
-  player.y = canvas.height - 100; // Keep player near the bottom
+  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
+    console.log(`Canvas resized to: ${canvas.width}x${canvas.height}`);
+    // Adjust player's Y position to be consistently near the bottom
+    player.y = canvas.height - player.height - 20; // Keep player 20px from bottom edge
+    // Adjust player's X position to be consistently centered
+    player.x = canvas.width / 2 - player.width / 2;
+  }
 }
+
 
 // Spawn a new item (good or bad)
 function spawnItem() {
@@ -296,7 +318,6 @@ function resetGame() {
   items = [];
   gameOver = false;
   paused = false;
-  player.x = canvas.width / 2 - player.width / 2; // Recenter player
   player.state = 'normal';
   player.jumpOffset = 0;
   player.jumping = false;
@@ -305,6 +326,7 @@ function resetGame() {
   timeElapsed = 0;
   hidePauseMenu(); // Hide pause menu
   hideGameOverMenu(); // Hide game over menu
+  resizeCanvas(); // Re-center player after canvas might have resized or reloaded
 }
 
 // Show the pause menu HTML element
@@ -421,7 +443,19 @@ window.addEventListener('resize', resizeCanvas);
 Promise.all(imagePromises)
   .then(() => {
     console.log("All images loaded. Starting game...");
-    resizeCanvas(); // Initial canvas size adjustment after images load
+    // After images are loaded, ensure player dimensions match the loaded image.
+    if (isMobile) {
+        // Set player size to the native resolution of the 92x92 high-res images
+        player.width = 92; 
+        player.height = 92;
+    } else {
+        // For desktop, use the original pixel art size (e.g., 32x32)
+        // You might want to use playerImages.normal.naturalWidth for this too if your desktop images vary
+        player.width = 32; // Assuming your original desktop images are 32x32
+        player.height = 32; // Assuming your original desktop images are 32x32
+    }
+    
+    resizeCanvas(); // Initial canvas size adjustment and player positioning after images load
     requestAnimationFrame(loop); // Start the game loop
   })
   .catch(err => {
@@ -436,7 +470,7 @@ Promise.all(imagePromises)
     `;
     errorMessage.innerHTML = `
       <p style="color: red; font-weight: bold;">Error loading game assets!</p>
-      <p>Failed to load images. Please ensure they are in the 'image/' folder.</p>
+      <p>Failed to load images. Please ensure they are in the 'image/' folder and named correctly (e.g., rui_normal.png, rui_normal_92.png).</p>
       <p>Error details: ${err}</p>
       <button onclick="this.parentNode.remove()" style="margin-top: 15px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
     `;
