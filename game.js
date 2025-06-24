@@ -65,7 +65,7 @@ const imagePromises = [
 // Game state variables
 const player = {
   // Initial position and size, will be adjusted by resizeCanvas
-  x: 0, y: 0, width: 96, height: 96, speed: 300,
+  x: 160, y: 500, width: 96, height: 96, speed: 300,
   state: 'normal', // 'normal', 'happy', 'dead'
   stateTimer: 0, // Timer for 'happy' state duration
   jumpOffset: 0, // Vertical offset for jump animation
