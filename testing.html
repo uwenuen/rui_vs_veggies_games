@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Catch the Good Items</title>
+  <style>
+    canvas { background: #eefaa8; display: block; margin: 0 auto; }
+    body { margin: 0; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+<canvas id="game" width="400" height="600"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const bgImg = new Image();
+bgImg.src = 'image/background_pixel.png';
+
+const playerImages = {
+  normal: new Image(),
+  happy: new Image(),
+  dead: new Image()
+};
+playerImages.normal.src = 'image/rui_normal.png';
+playerImages.happy.src = 'image/rui_closing_eyes.png';
+playerImages.dead.src   = 'image/rui_dead.png';
+
+// Image loading promises
+function loadImage(img) {
+  return new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(`Failed to load image: ${img.src}`);
+  });
+}
+const imagePromises = [
+  loadImage(bgImg),
+  loadImage(playerImages.normal),
+  loadImage(playerImages.happy),
+  loadImage(playerImages.dead)
+];
+
+const player = {
+  x: 160, y: 500, width: 96, height: 96, speed: 300,
+  state: 'normal',
+  stateTimer: 0,
+  jumpOffset: 0,
+  jumping: false,
+  jumpSpeed: 0
+};
+
+let items = [];
+let score = 0;
+let highScore = 0;
+let gameOver = false;
+let paused = false;
+
+let moveLeft = false, moveRight = false;
+let lastTime = 0;
+let itemTimer = 0;
+
+function spawnItem() {
+  const isBomb = Math.random() < 0.3;
+  items.push({
+    x: Math.random() * (canvas.width - 20),
+    y: 0,
+    size: 20,
+    isBomb,
+    speed: 100 + Math.random() * 100
+  });
+}
+
+function update(delta) {
+  if (gameOver || paused) return;
+
+  itemTimer += delta;
+  if (itemTimer > 1) {
+    spawnItem();
+    itemTimer = 0;
+  }
+
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    item.y += item.speed * delta;
+
+    if (
+      item.x < player.x + player.width &&
+      item.x + item.size > player.x &&
+      item.y < player.y + player.height &&
+      item.y + item.size > player.y
+    ) {
+      if (item.isBomb) {
+        player.state = 'dead';
+        gameOver = true;
+        if (score > highScore) highScore = score;
+        return;
+      } else {
+        player.state = 'happy';
+        player.stateTimer = 0.3;
+        player.jumping = true;
+        player.jumpSpeed = -300;
+        score++;
+        items.splice(i, 1);
+      }
+    }
+  }
+
+  if (player.jumping) {
+    player.jumpSpeed += 2000 * delta;
+    player.jumpOffset += player.jumpSpeed * delta;
+    if (player.jumpOffset >= 0) {
+      player.jumpOffset = 0;
+      player.jumping = false;
+    }
+  }
+
+  if (player.state === 'happy') {
+    player.stateTimer -= delta;
+    if (player.stateTimer <= 0) {
+      player.state = 'normal';
+    }
+  }
+
+  items = items.filter(item => item.y <= canvas.height);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
+  const img = playerImages[player.state] || playerImages.normal;
+  ctx.drawImage(img, player.x, player.y + player.jumpOffset, player.width, player.height);
+
+  for (const item of items) {
+    ctx.fillStyle = item.isBomb ? 'red' : 'green';
+    ctx.beginPath();
+    ctx.arc(item.x + item.size / 2, item.y + item.size / 2, item.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = 'black';
+  ctx.font = '16px Arial';
+  ctx.fillText(`Score: ${score}`, 10, 20);
+  ctx.fillText(`High Score: ${highScore}`, 10, 40);
+
+  if (paused) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    ctx.font = '24px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Paused', canvas.width / 2, canvas.height / 2 - 40);
+    ctx.font = '18px Arial';
+    ctx.fillText('Continue (Enter)', canvas.width / 2, canvas.height / 2);
+    ctx.fillText('Restart (R)', canvas.width / 2, canvas.height / 2 + 30);
+  }
+
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    ctx.font = '24px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 20);
+    ctx.font = '18px Arial';
+    ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
+    ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 40);
+    ctx.font = '12px Arial';
+    ctx.fillText('Made by shin', canvas.width / 2, canvas.height / 2 + 60);
+    ctx.font = '18px Arial';
+    ctx.fillText('Press Enter to Restart', canvas.width / 2, canvas.height / 2 + 80);
+  }
+
+  ctx.textAlign = 'start';
+}
+
+function handleMovement(delta) {
+  if (paused || gameOver) return;
+  if (moveLeft) player.x -= player.speed * delta;
+  if (moveRight) player.x += player.speed * delta;
+  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+}
+
+function resetGame() {
+  score = 0;
+  items = [];
+  gameOver = false;
+  paused = false;
+  player.x = 160;
+  player.state = 'normal';
+  player.jumpOffset = 0;
+  player.jumping = false;
+  player.jumpSpeed = 0;
+  itemTimer = 0;
+}
+
+function loop(timestamp) {
+  const delta = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  handleMovement(delta);
+  update(delta);
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+// Input handling
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') moveLeft = true;
+  if (e.key === 'ArrowRight') moveRight = true;
+  if (e.key === 'Enter') {
+    if (gameOver) resetGame();
+    else paused = !paused;
+  }
+  if (e.key.toLowerCase() === 'r') resetGame();
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft') moveLeft = false;
+  if (e.key === 'ArrowRight') moveRight = false;
+});
+
+// Start game after images load
+Promise.all(imagePromises)
+  .then(() => {
+    console.log("All images loaded. Starting game...");
+    requestAnimationFrame(loop);
+  })
+  .catch(err => {
+    console.error("Image load error:", err);
+    alert("Failed to load images. Check the image paths.");
+  });
+
+</script>
+</body>
+</html>
