@@ -11,7 +11,7 @@
       background: #eefaa8; /* This is the yellow background */
       font-family: sans-serif;
       overflow: hidden;
-      touch-action: manipulation;
+      touch-action: manipulation; /* Disable default touch actions like double tap zoom */
     }
 
     #game-container {
@@ -25,46 +25,83 @@
     }
 
     canvas {
-      image-rendering: pixelated;
+      image-rendering: optimizeSpeed; /* Optimize for speed rather than quality */
+      image-rendering: -webkit-optimize-contrast; /* Webkit specific for sharp pixels */
+      image-rendering: crisp-edges; /* Modern browsers for sharp pixels */
+      image-rendering: pixelated; /* Ensures pixelation for scaling up */
       max-width: 100%;
       max-height: 100%;
-      /* Default desktop size */
-      width: 400px;
-      height: 600px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3); /* Add a subtle shadow to the canvas */
+      border-radius: 10px; /* Rounded corners for the canvas */
+      background-color: white; /* Fallback background for canvas */
     }
 
-    /* Desktop version */
+    /* Desktop version - Fixed size canvas */
     @media (min-width: 768px) {
       canvas {
         width: 400px;
         height: 600px;
       }
-      .mobile-controls {
-        display: none !important;
+      .mobile-controls, #topRightPauseButton {
+        display: none !important; /* Hide mobile controls and top-right pause button on desktop */
       }
     }
 
-    /* Mobile version */
+    /* Mobile version - Responsive canvas */
     @media (max-width: 767px) {
       canvas {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 2/3; /* Maintain aspect ratio for mobile */
+        width: 95vw; /* Use viewport width for responsiveness */
+        height: calc(95vw * 1.5); /* Maintain 2:3 aspect ratio (400/600 = 2/3) */
+        max-height: 80vh; /* Ensure it doesn't take up too much vertical space */
       }
-      .mobile-controls {
-        display: flex; /* Show mobile controls on small screens */
+      .mobile-controls, #topRightPauseButton {
+        display: flex; /* Show mobile controls and top-right pause button on small screens */
       }
     }
 
+    /* Mobile bottom controls (left/right in footer) */
     .mobile-controls {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      display: none; /* Hidden by default, shown by media query */
+      display: flex; /* Ensure these are flex on mobile */
       justify-content: space-between;
       padding: 20px;
-      z-index: 100;
+      z-index: 100; /* Ensure it's above other game elements */
+      box-sizing: border-box;
+      width: 100%;
+      background-color: rgba(238, 250, 168, 0.7); /* Semi-transparent background for visibility */
+      border-top-left-radius: 15px; /* Rounded top corners */
+      border-top-right-radius: 15px;
+    }
+
+    /* Top-right pause button */
+    #topRightPauseButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 101; /* Higher z-index to ensure it's on top */
+      width: 50px;
+      height: 50px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.9); /* Slightly less transparent */
+      border: 2px solid #000;
+      font-weight: bold;
+      color: #333;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out;
+    }
+
+    #topRightPauseButton:active {
+      background-color: rgba(200, 200, 200, 0.9);
+      transform: translateY(2px);
     }
 
     .mobile-button {
@@ -77,75 +114,117 @@
       align-items: center;
       justify-content: center;
       font-size: 24px;
+      font-weight: bold;
+      color: #333;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out;
     }
 
     .mobile-button:active {
       background-color: rgba(200, 200, 200, 0.8);
+      transform: translateY(2px);
     }
 
-    .mobile-menu {
+    /* Common menu styling for pause and game over */
+    .game-menu {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(0, 0, 0, 0.7);
+      background-color: rgba(0, 0, 0, 0.85); /* Slightly darker overlay for menus */
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 200;
+      z-index: 200; /* Ensure menus are on top of everything */
       color: white;
       text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
     }
 
-    .mobile-menu-button {
+    .game-menu h1 {
+      font-size: 3em;
+      margin-bottom: 20px;
+      color: #f0f0f0;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .game-menu div {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+    }
+
+    .game-menu-button {
       margin: 10px;
       padding: 15px 30px;
-      background-color: rgba(255, 255, 255, 0.8);
-      color: black;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
       border-radius: 10px;
-      font-size: 18px;
+      font-size: 1.2em;
       cursor: pointer;
       user-select: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
-    .mobile-menu-button:active {
-      background-color: rgba(200, 200, 200, 0.8);
+    .game-menu-button.secondary {
+      background-color: #f44336;
+    }
+
+    .game-menu-button:hover {
+      background-color: #45a049;
+    }
+
+    .game-menu-button.secondary:hover {
+      background-color: #d32f2f;
+    }
+
+    .game-menu-button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .hidden {
       display: none !important;
     }
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 <div id="game-container">
   <canvas id="game" width="400" height="600"></canvas>
+
+  <!-- Top-right pause button (always present, controlled by CSS media query) -->
+  <div id="topRightPauseButton" class="mobile-button">||</div>
   
-  <!-- Mobile controls (only shown on mobile) -->
+  <!-- Mobile controls (only shown on mobile via CSS media query) -->
   <div class="mobile-controls">
     <div id="leftButton" class="mobile-button">←</div>
-    <div id="pauseButton" class="mobile-button">||</div>
     <div id="rightButton" class="mobile-button">→</div>
   </div>
   
-  <!-- Mobile pause menu -->
-  <div id="pauseMenu" class="mobile-menu hidden">
+  <!-- Pause menu (unified for mobile and desktop) -->
+  <div id="pauseMenu" class="game-menu hidden">
     <h1>Paused</h1>
-    <div id="continueButton" class="mobile-menu-button">Continue</div>
-    <div id="restartButtonMenu" class="mobile-menu-button">Restart</div>
+    <button id="continueButton" class="game-menu-button">Continue</button>
+    <button id="restartButtonMenu" class="game-menu-button secondary">Restart</button>
   </div>
   
-  <!-- Mobile game over menu -->
-  <div id="gameOverMenu" class="mobile-menu hidden">
+  <!-- Game over menu (unified for mobile and desktop) -->
+  <div id="gameOverMenu" class="game-menu hidden">
     <h1>Game Over</h1>
     <div id="scoreDisplay">Score: 0</div>
     <div id="highScoreDisplay">High Score: 0</div>
-    <div id="restartButtonGameOver" class="mobile-menu-button">Play Again</div>
+    <button id="restartButtonGameOver" class="game-menu-button">Play Again</button>
   </div>
 </div>
 
