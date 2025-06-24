@@ -5,43 +5,31 @@
   <style>
     canvas { background: #eefaa8; display: block; margin: 0 auto; }
     body { margin: 0; font-family: sans-serif; }
-
-    /* Touch buttons */
-    #touch-controls {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
+    .button {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 2px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
     }
-
-    #touch-controls button {
-      font-size: 32px;
-      padding: 16px 24px;
-      margin: 0 20px;
-      border: none;
-      border-radius: 12px;
-      background: #222;
-      color: white;
-      opacity: 0.8;
-    }
-
-    @media (max-width: 768px) {
-      #touch-controls {
-        display: block;
-      }
-    }
+    #leftButton { left: 20px; bottom: 20px; }
+    #rightButton { right: 20px; bottom: 20px; }
+    #pauseButton { left: 50%; bottom: 20px; transform: translateX(-50%); }
+    #restartButton { left: 50%; bottom: 120px; transform: translateX(-50%); display: none; }
   </style>
 </head>
 <body>
 <canvas id="game" width="400" height="600"></canvas>
-
-<!-- Mobile Touch Controls -->
-<div id="touch-controls">
-  <button id="left-btn">←</button>
-  <button id="right-btn">→</button>
-</div>
+<div id="leftButton" class="button">←</div>
+<div id="rightButton" class="button">→</div>
+<div id="pauseButton" class="button">||</div>
+<div id="restartButton" class="button">🔄</div>
 
 <script>
 const canvas = document.getElementById('game');
@@ -115,7 +103,6 @@ const player = {
   jumpOffset: 0,
   jumping: false,
   jumpSpeed: 0,
-  // Player hitbox - smaller than visual size
   hitboxRadius: 30,
   hitboxOffsetX: 0,
   hitboxOffsetY: 20
@@ -140,15 +127,13 @@ function spawnItem() {
     y: 0,
     size: 60,
     isBomb,
-    speed: 100 + Math.random() * 100 + (timeElapsed / itemSpeedIncreaseInterval) * itemSpeedIncreaseAmount, // Increase speed over time
+    speed: 100 + Math.random() * 100 + (timeElapsed / itemSpeedIncreaseInterval) * itemSpeedIncreaseAmount,
     rotation: 0,
-    // Item hitbox - smaller than visual size
     hitboxRadius: 15,
     hitboxOffsetX: 0,
     hitboxOffsetY: 0
   };
 
-  // Randomly select good or bad item image
   if (isBomb) {
     item.image = badItemImages[Math.floor(Math.random() * badItemImages.length)];
   } else {
@@ -158,27 +143,23 @@ function spawnItem() {
   items.push(item);
 }
 
-// Improved collision detection using circles
 function checkCollision(player, item) {
-  // Calculate center points of hitboxes
   const playerCenterX = player.x + player.width/2 + player.hitboxOffsetX;
   const playerCenterY = player.y + player.height/2 + player.hitboxOffsetY + player.jumpOffset;
   const itemCenterX = item.x + item.size/2 + item.hitboxOffsetX;
   const itemCenterY = item.y + item.size/2 + item.hitboxOffsetY;
   
-  // Calculate distance between centers
   const dx = playerCenterX - itemCenterX;
   const dy = playerCenterY - itemCenterY;
   const distance = Math.sqrt(dx * dx + dy * dy);
   
-  // Check if distance is less than sum of radii
   return distance < (player.hitboxRadius + item.hitboxRadius);
 }
 
 function update(delta) {
     if (gameOver || paused) return;
 
-    timeElapsed += delta; // Increment time elapsed
+    timeElapsed += delta;
 
     itemTimer += delta;
     if (itemTimer > 1) {
@@ -204,7 +185,7 @@ function update(delta) {
                 player.stateTimer = 0.3;
                 player.jumping = true;
                 player.jumpSpeed = -300;
-                score += 100; // Increase score by 100 for good items
+                score += 100;
                 items.splice(i, 1);
                 getGoodSound.currentTime = 0;
                 getGoodSound.play().catch(err => console.warn("Sound play failed:", err));
@@ -245,7 +226,6 @@ function draw() {
     ctx.drawImage(item.image, -item.size / 2, -item.size / 2, item.size, item.size);
     ctx.restore();
 
-    // Draw hitboxes if debug mode is on
     if (SHOW_HITBOXES) {
       ctx.save();
       ctx.beginPath();
@@ -262,7 +242,6 @@ function draw() {
     }
   }
 
-  // Draw player hitbox if debug mode is on
   if (SHOW_HITBOXES) {
     ctx.save();
     ctx.beginPath();
@@ -332,6 +311,7 @@ function resetGame() {
   player.jumping = false;
   player.jumpSpeed = 0;
   itemTimer = 0;
+  document.getElementById('restartButton').style.display = 'none';
 }
 
 function loop(timestamp) {
@@ -358,6 +338,26 @@ document.addEventListener('keyup', e => {
   if (e.key === 'ArrowRight') moveRight = false;
 });
 
+// Touch controls
+document.getElementById('leftButton').addEventListener('touchstart', () => {
+  moveLeft = true;
+});
+document.getElementById('leftButton').addEventListener('touchend', () => {
+  moveLeft = false;
+});
+document.getElementById('rightButton').addEventListener('touchstart', () => {
+  moveRight = true;
+});
+document.getElementById('rightButton').addEventListener('touchend', () => {
+  moveRight = false;
+});
+document.getElementById('pauseButton').addEventListener('click', () => {
+  paused = !paused;
+});
+document.getElementById('restartButton').addEventListener('click', () => {
+  resetGame();
+});
+
 // Start after all images are loaded
 Promise.all(imagePromises)
   .then(() => {
@@ -369,26 +369,6 @@ Promise.all(imagePromises)
     alert("Failed to load game assets. Check image/audio paths.");
   });
 
-// Touch controls
-const leftBtn = document.getElementById('left-btn');
-const rightBtn = document.getElementById('right-btn');
-
-leftBtn.addEventListener('touchstart', e => {
-  e.preventDefault();
-  moveLeft = true;
-});
-leftBtn.addEventListener('touchend', e => {
-  e.preventDefault();
-  moveLeft = false;
-});
-rightBtn.addEventListener('touchstart', e => {
-  e.preventDefault();
-  moveRight = true;
-});
-rightBtn.addEventListener('touchend', e => {
-  e.preventDefault();
-  moveRight = false;
-});
 </script>
 </body>
 </html>
