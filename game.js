@@ -96,16 +96,15 @@ function resizeCanvas() {
   const displayWidth = parseFloat(style.width);
   const displayHeight = parseFloat(style.height);
 
-  // If the canvas's internal dimensions don't match its display dimensions, update them
-  // This also effectively sets the coordinate system for drawing
-  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-    canvas.width = displayWidth;
-    canvas.height = displayHeight;
-    console.log(`Canvas resized to: ${canvas.width}x${canvas.height}`);
-    // Recalculate player position to be centered horizontally and at the bottom
-    player.x = canvas.width / 2 - player.width / 2;
-    player.y = canvas.height - 100; // Keep player near the bottom
-  }
+  // Set the canvas's internal drawing dimensions to match its CSS display dimensions
+  // This is crucial for avoiding blurriness.
+  canvas.width = displayWidth;
+  canvas.height = displayHeight;
+  console.log(`Canvas resized to: ${canvas.width}x${canvas.height}`);
+  
+  // Recalculate player position to be centered horizontally and at the bottom
+  player.x = canvas.width / 2 - player.width / 2;
+  player.y = canvas.height - 100; // Keep player near the bottom
 }
 
 // Spawn a new item (good or bad)
