@@ -1,14 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Rui vs veggies</title>
+  <title>Rui vs Veggies</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    canvas { background: #eefaa8; display: block; margin: 0 auto; }
-    body { margin: 0; font-family: sans-serif; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      background-color: #eefaa8;
+      touch-action: none;
+    }
+
+    #game {
+      display: block;
+      margin: 0 auto;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+    }
+
     .button {
-      position: absolute;
-      width: 80px;
-      height: 80px;
+      position: fixed;
+      width: 15vw;
+      height: 15vw;
+      max-width: 80px;
+      max-height: 80px;
       border-radius: 50%;
       background-color: rgba(255, 255, 255, 0.8);
       border: 2px solid #000;
@@ -17,15 +36,25 @@
       justify-content: center;
       font-size: 24px;
       cursor: pointer;
+      user-select: none;
+      z-index: 10;
     }
-    #leftButton { left: 20px; bottom: 20px; }
-    #rightButton { right: 20px; bottom: 20px; }
-    #pauseButton { left: 50%; bottom: 20px; transform: translateX(-50%); }
-    #restartButton { left: 50%; bottom: 120px; transform: translateX(-50%); display: none; }
+
+    #leftButton { left: 5vw; bottom: 5vh; }
+    #rightButton { right: 5vw; bottom: 5vh; }
+    #pauseButton { left: 50%; bottom: 5vh; transform: translateX(-50%); }
+    #restartButton {
+      left: 50%;
+      bottom: 20vh;
+      transform: translateX(-50%);
+      display: none;
+    }
   </style>
 </head>
+
 <body>
 <canvas id="game" width="400" height="600"></canvas>
+
 <div id="leftButton" class="button">←</div>
 <div id="rightButton" class="button">→</div>
 <div id="pauseButton" class="button">||</div>
@@ -35,6 +64,26 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
+
+// ✅ Responsive scaling
+function resizeCanvas() {
+  const scale = Math.min(
+    window.innerWidth / canvas.width,
+    window.innerHeight / canvas.height
+  );
+
+  canvas.style.transform = `scale(${scale})`;
+  canvas.style.transformOrigin = 'top left';
+  canvas.style.position = 'absolute';
+  canvas.style.left = '50%';
+  canvas.style.top = '50%';
+  canvas.style.marginLeft = `${-canvas.width * scale / 2}px`;
+  canvas.style.marginTop = `${-canvas.height * scale / 2}px`;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // call initially
+
 
 // Debug mode - set to true to see hitboxes
 const SHOW_HITBOXES = false;
