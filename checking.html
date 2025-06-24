@@ -27,8 +27,27 @@
       height: auto;
       max-height: 100%;
       image-rendering: pixelated;
+      aspect-ratio: 2 / 3; /* Maintain a 2:3 aspect ratio */
     }
 
+    .button {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 2px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    #leftButton { left: 20px; bottom: 20px; }
+    #rightButton { right: 20px; bottom: 20px; }
+    #pauseButton { left: 50%; bottom: 20px; transform: translateX(-50%); }
+    #restartButton { left: 50%; bottom: 120px; transform: translateX(-50%); display: none; }
   </style>
 </head>
 
