@@ -8,82 +8,44 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      overflow: hidden;
+      background: #eefaa8;
       font-family: sans-serif;
-      background-color: #eefaa8;
-      touch-action: none;
+      overflow: hidden;
     }
 
-    #game {
-      display: block;
-      margin: 0 auto;
+    #game-container {
+      position: relative;
       width: 100vw;
       height: 100vh;
-      touch-action: none;
-    }
-
-    .button {
-      position: fixed;
-      width: 15vw;
-      height: 15vw;
-      max-width: 80px;
-      max-height: 80px;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.8);
-      border: 2px solid #000;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      cursor: pointer;
-      user-select: none;
-      z-index: 10;
     }
 
-    #leftButton { left: 5vw; bottom: 5vh; }
-    #rightButton { right: 5vw; bottom: 5vh; }
-    #pauseButton { left: 50%; bottom: 5vh; transform: translateX(-50%); }
-    #restartButton {
-      left: 50%;
-      bottom: 20vh;
-      transform: translateX(-50%);
-      display: none;
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 100%;
+      image-rendering: pixelated;
     }
+
   </style>
 </head>
 
 <body>
-<canvas id="game" width="400" height="600"></canvas>
+<div id="game-container">
+  <canvas id="game" width="400" height="600"></canvas>
 
-<div id="leftButton" class="button">←</div>
-<div id="rightButton" class="button">→</div>
-<div id="pauseButton" class="button">||</div>
-<div id="restartButton" class="button">🔄</div>
+  <div id="leftButton" class="button">←</div>
+  <div id="rightButton" class="button">→</div>
+  <div id="pauseButton" class="button">||</div>
+  <div id="restartButton" class="button">🔄</div>
+</div>
 
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
-
-// ✅ Responsive scaling
-function resizeCanvas() {
-  const scale = Math.min(
-    window.innerWidth / canvas.width,
-    window.innerHeight / canvas.height
-  );
-
-  canvas.style.transform = `scale(${scale})`;
-  canvas.style.transformOrigin = 'top left';
-  canvas.style.position = 'absolute';
-  canvas.style.left = '50%';
-  canvas.style.top = '50%';
-  canvas.style.marginLeft = `${-canvas.width * scale / 2}px`;
-  canvas.style.marginTop = `${-canvas.height * scale / 2}px`;
-}
-
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas(); // call initially
-
 
 // Debug mode - set to true to see hitboxes
 const SHOW_HITBOXES = false;
