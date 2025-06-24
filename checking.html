@@ -8,30 +8,66 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      background: #eefaa8;
+      background: #eefaa8; /* This is the yellow background */
       font-family: sans-serif;
       overflow: hidden;
+      touch-action: manipulation;
     }
 
     #game-container {
       position: relative;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
 
     canvas {
-      width: 100%;
-      height: auto;
-      max-height: 100%;
       image-rendering: pixelated;
-      aspect-ratio: 2 / 3; /* Maintain a 2:3 aspect ratio */
+      max-width: 100%;
+      max-height: 100%;
+      /* Default desktop size */
+      width: 400px;
+      height: 600px;
     }
 
-    .button {
-      position: absolute;
+    /* Desktop version */
+    @media (min-width: 768px) {
+      canvas {
+        width: 400px;
+        height: 600px;
+      }
+      .mobile-controls {
+        display: none !important;
+      }
+    }
+
+    /* Mobile version */
+    @media (max-width: 767px) {
+      canvas {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 2/3; /* Maintain aspect ratio for mobile */
+      }
+      .mobile-controls {
+        display: flex; /* Show mobile controls on small screens */
+      }
+    }
+
+    .mobile-controls {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: none; /* Hidden by default, shown by media query */
+      justify-content: space-between;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .mobile-button {
       width: 80px;
       height: 80px;
       border-radius: 50%;
@@ -41,364 +77,80 @@
       align-items: center;
       justify-content: center;
       font-size: 24px;
-      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    #leftButton { left: 20px; bottom: 20px; }
-    #rightButton { right: 20px; bottom: 20px; }
-    #pauseButton { left: 50%; bottom: 20px; transform: translateX(-50%); }
-    #restartButton { left: 50%; bottom: 120px; transform: translateX(-50%); display: none; }
+    .mobile-button:active {
+      background-color: rgba(200, 200, 200, 0.8);
+    }
+
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      color: white;
+      text-align: center;
+    }
+
+    .mobile-menu-button {
+      margin: 10px;
+      padding: 15px 30px;
+      background-color: rgba(255, 255, 255, 0.8);
+      color: black;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .mobile-menu-button:active {
+      background-color: rgba(200, 200, 200, 0.8);
+    }
+
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 
 <body>
 <div id="game-container">
   <canvas id="game" width="400" height="600"></canvas>
-
-  <div id="leftButton" class="button">←</div>
-  <div id="rightButton" class="button">→</div>
-  <div id="pauseButton" class="button">||</div>
-  <div id="restartButton" class="button">🔄</div>
+  
+  <!-- Mobile controls (only shown on mobile) -->
+  <div class="mobile-controls">
+    <div id="leftButton" class="mobile-button">←</div>
+    <div id="pauseButton" class="mobile-button">||</div>
+    <div id="rightButton" class="mobile-button">→</div>
+  </div>
+  
+  <!-- Mobile pause menu -->
+  <div id="pauseMenu" class="mobile-menu hidden">
+    <h1>Paused</h1>
+    <div id="continueButton" class="mobile-menu-button">Continue</div>
+    <div id="restartButtonMenu" class="mobile-menu-button">Restart</div>
+  </div>
+  
+  <!-- Mobile game over menu -->
+  <div id="gameOverMenu" class="mobile-menu hidden">
+    <h1>Game Over</h1>
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="highScoreDisplay">High Score: 0</div>
+    <div id="restartButtonGameOver" class="mobile-menu-button">Play Again</div>
+  </div>
 </div>
 
-<script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
+<!-- Link to the external game.js file -->
+<script src="game.js"></script>
 
-// Debug mode - set to true to see hitboxes
-const SHOW_HITBOXES = false;
-
-// Load images
-const bgImg = new Image();
-bgImg.src = 'image/background.png';
-
-const playerImages = {
-  normal: new Image(),
-  happy: new Image(),
-  dead: new Image()
-};
-playerImages.normal.src = 'image/rui_normal.png';
-playerImages.happy.src = 'image/rui_closing_eyes.png';
-playerImages.dead.src   = 'image/rui_dead.png';
-
-// Load good item images
-const goodItemImages = [
-  new Image(),
-  new Image(),
-  new Image(),
-  new Image()
-];
-goodItemImages[0].src = 'image/rui_ramune.png';
-goodItemImages[1].src = 'image/nene_ramune.png';
-goodItemImages[2].src = 'image/tsukasa_ramune.png';
-goodItemImages[3].src = 'image/emu_ramune.png';
-
-// Load bad item images
-const badItemImages = [
-  new Image(),
-  new Image()
-];
-badItemImages[0].src = 'image/carrot.png';
-badItemImages[1].src = 'image/brokoli.png';
-
-// Load sound
-const getGoodSound = new Audio('sound/get_good.wav');
-getGoodSound.preload = 'auto';
-const getBadSound = new Audio('sound/get_bad.mp3');
-getBadSound.preload = 'auto';
-
-// Helper to ensure all images load
-function loadImage(img) {
-  return new Promise((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(`Failed to load image: ${img.src}`);
-  });
-}
-
-const imagePromises = [
-  loadImage(bgImg),
-  loadImage(playerImages.normal),
-  loadImage(playerImages.happy),
-  loadImage(playerImages.dead),
-  ...goodItemImages.map(loadImage),
-  ...badItemImages.map(loadImage)
-];
-
-// Game state
-const player = {
-  x: 160, y: 500, width: 96, height: 96, speed: 300,
-  state: 'normal',
-  stateTimer: 0,
-  jumpOffset: 0,
-  jumping: false,
-  jumpSpeed: 0,
-  hitboxRadius: 30,
-  hitboxOffsetX: 0,
-  hitboxOffsetY: 20
-};
-
-let items = [];
-let score = 0;
-let highScore = 0;
-let gameOver = false;
-let paused = false;
-let moveLeft = false, moveRight = false;
-let lastTime = 0;
-let itemTimer = 0;
-let itemSpeedIncreaseInterval = 10; // Increase speed every 10 seconds
-let itemSpeedIncreaseAmount = 20; // Increase speed by 20
-let timeElapsed = 0; // Track time elapsed
-
-function spawnItem() {
-  const isBomb = Math.random() < 0.3;
-  const item = {
-    x: Math.random() * (canvas.width - 40),
-    y: 0,
-    size: 60,
-    isBomb,
-    speed: 100 + Math.random() * 100 + (timeElapsed / itemSpeedIncreaseInterval) * itemSpeedIncreaseAmount,
-    rotation: 0,
-    hitboxRadius: 15,
-    hitboxOffsetX: 0,
-    hitboxOffsetY: 0
-  };
-
-  if (isBomb) {
-    item.image = badItemImages[Math.floor(Math.random() * badItemImages.length)];
-  } else {
-    item.image = goodItemImages[Math.floor(Math.random() * goodItemImages.length)];
-  }
-
-  items.push(item);
-}
-
-function checkCollision(player, item) {
-  const playerCenterX = player.x + player.width/2 + player.hitboxOffsetX;
-  const playerCenterY = player.y + player.height/2 + player.hitboxOffsetY + player.jumpOffset;
-  const itemCenterX = item.x + item.size/2 + item.hitboxOffsetX;
-  const itemCenterY = item.y + item.size/2 + item.hitboxOffsetY;
-  
-  const dx = playerCenterX - itemCenterX;
-  const dy = playerCenterY - itemCenterY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  
-  return distance < (player.hitboxRadius + item.hitboxRadius);
-}
-
-function update(delta) {
-    if (gameOver || paused) return;
-
-    timeElapsed += delta;
-
-    itemTimer += delta;
-    if (itemTimer > 1) {
-        spawnItem();
-        itemTimer = 0;
-    }
-
-    for (let i = items.length - 1; i >= 0; i--) {
-        const item = items[i];
-        item.y += item.speed * delta;
-        item.rotation += 2 * delta;
-
-        if (checkCollision(player, item)) {
-            if (item.isBomb) {
-                player.state = 'dead';
-                gameOver = true;
-                if (score > highScore) highScore = score;
-                getBadSound.currentTime = 0;
-                getBadSound.play().catch(err => console.warn("Sound play failed:", err));
-                return;
-            } else {
-                player.state = 'happy';
-                player.stateTimer = 0.3;
-                player.jumping = true;
-                player.jumpSpeed = -300;
-                score += 100;
-                items.splice(i, 1);
-                getGoodSound.currentTime = 0;
-                getGoodSound.play().catch(err => console.warn("Sound play failed:", err));
-            }
-        }
-    }
-
-    if (player.jumping) {
-        player.jumpSpeed += 2000 * delta;
-        player.jumpOffset += player.jumpSpeed * delta;
-        if (player.jumpOffset >= 0) {
-            player.jumpOffset = 0;
-            player.jumping = false;
-        }
-    }
-
-    if (player.state === 'happy') {
-        player.stateTimer -= delta;
-        if (player.stateTimer <= 0) {
-            player.state = 'normal';
-        }
-    }
-
-    items = items.filter(item => item.y <= canvas.height);
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-
-  const img = playerImages[player.state] || playerImages.normal;
-  ctx.drawImage(img, player.x, player.y + player.jumpOffset, player.width, player.height);
-
-  for (const item of items) {
-    ctx.save();
-    ctx.translate(item.x + item.size / 2, item.y + item.size / 2);
-    ctx.rotate(item.rotation);
-    ctx.drawImage(item.image, -item.size / 2, -item.size / 2, item.size, item.size);
-    ctx.restore();
-
-    if (SHOW_HITBOXES) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(
-        item.x + item.size/2 + item.hitboxOffsetX,
-        item.y + item.size/2 + item.hitboxOffsetY,
-        item.hitboxRadius,
-        0,
-        Math.PI * 2
-      );
-      ctx.strokeStyle = item.isBomb ? 'rgba(255,0,0,0.5)' : 'rgba(0,255,0,0.5)';
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  if (SHOW_HITBOXES) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(
-      player.x + player.width/2 + player.hitboxOffsetX,
-      player.y + player.height/2 + player.hitboxOffsetY + player.jumpOffset,
-      player.hitboxRadius,
-      0,
-      Math.PI * 2
-    );
-    ctx.strokeStyle = 'rgba(0,0,255,0.5)';
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  ctx.fillStyle = 'black';
-  ctx.font = '16px Arial';
-  ctx.fillText(`Score: ${score}`, 10, 20);
-  ctx.fillText(`High Score: ${highScore}`, 10, 40);
-
-  if (paused) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'white';
-    ctx.font = '24px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Paused', canvas.width / 2, canvas.height / 2 - 40);
-    ctx.font = '18px Arial';
-    ctx.fillText('Continue (Enter)', canvas.width / 2, canvas.height / 2);
-    ctx.fillText('Restart (R)', canvas.width / 2, canvas.height / 2 + 30);
-  }
-
-  if (gameOver) {
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'white';
-    ctx.font = '24px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 20);
-    ctx.font = '18px Arial';
-    ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
-    ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 40);
-    ctx.font = '12px Arial';
-    ctx.fillText('Made by shin', canvas.width / 2, canvas.height / 2 + 60);
-    ctx.font = '18px Arial';
-    ctx.fillText('Press Enter to Restart', canvas.width / 2, canvas.height / 2 + 80);
-  }
-
-  ctx.textAlign = 'start';
-}
-
-function handleMovement(delta) {
-  if (paused || gameOver) return;
-  if (moveLeft) player.x -= player.speed * delta;
-  if (moveRight) player.x += player.speed * delta;
-  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-}
-
-function resetGame() {
-  score = 0;
-  items = [];
-  gameOver = false;
-  paused = false;
-  player.x = 160;
-  player.state = 'normal';
-  player.jumpOffset = 0;
-  player.jumping = false;
-  player.jumpSpeed = 0;
-  itemTimer = 0;
-  document.getElementById('restartButton').style.display = 'none';
-}
-
-function loop(timestamp) {
-  const delta = (timestamp - lastTime) / 1000;
-  lastTime = timestamp;
-  handleMovement(delta);
-  update(delta);
-  draw();
-  requestAnimationFrame(loop);
-}
-
-// Controls
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowLeft') moveLeft = true;
-  if (e.key === 'ArrowRight') moveRight = true;
-  if (e.key === 'Enter') {
-    if (gameOver) resetGame();
-    else paused = !paused;
-  }
-  if (e.key.toLowerCase() === 'r') resetGame();
-});
-document.addEventListener('keyup', e => {
-  if (e.key === 'ArrowLeft') moveLeft = false;
-  if (e.key === 'ArrowRight') moveRight = false;
-});
-
-// Touch controls
-document.getElementById('leftButton').addEventListener('touchstart', () => {
-  moveLeft = true;
-});
-document.getElementById('leftButton').addEventListener('touchend', () => {
-  moveLeft = false;
-});
-document.getElementById('rightButton').addEventListener('touchstart', () => {
-  moveRight = true;
-});
-document.getElementById('rightButton').addEventListener('touchend', () => {
-  moveRight = false;
-});
-document.getElementById('pauseButton').addEventListener('click', () => {
-  paused = !paused;
-});
-document.getElementById('restartButton').addEventListener('click', () => {
-  resetGame();
-});
-
-// Start after all images are loaded
-Promise.all(imagePromises)
-  .then(() => {
-    console.log("All assets loaded. Starting game...");
-    requestAnimationFrame(loop);
-  })
-  .catch(err => {
-    console.error("Error loading assets:", err);
-    alert("Failed to load game assets. Check image/audio paths.");
-  });
-
-</script>
 </body>
 </html>
