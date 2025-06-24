@@ -21,6 +21,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      /* Default for desktop, centered */
       justify-content: center;
     }
 
@@ -57,11 +58,18 @@
 
     /* Mobile version - Responsive canvas, dynamically resized by JS for non-blurry output */
     @media (max-width: 767px) {
+      #game-container {
+        /* Align content to the top to make room for bottom controls */
+        justify-content: flex-start;
+        /* Add padding at the bottom to push the canvas up and clear the mobile controls */
+        padding-bottom: 120px; /* Adjust this value if controls are still blocking */
+      }
       canvas {
         /* Set CSS to full available space, JS will adjust internal resolution to match */
         width: 95vw;
         height: calc(95vw * 1.5); /* Maintain 2:3 aspect ratio (400/600 = 2/3) */
         max-height: 80vh; /* Ensure it doesn't take up too much vertical space */
+        margin-top: 20px; /* Add a little margin from the top of the viewport */
       }
       .mobile-controls, #topRightPauseButton {
         display: flex; /* Show mobile controls and top-right pause button on small screens */
