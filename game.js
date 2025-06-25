@@ -14,19 +14,15 @@ const SHOW_HITBOXES = false;
 const bgImg = new Image();
 bgImg.src = 'image/background.png';
 
+
 const playerImages = {
   normal: new Image(),
   happy: new Image(),
   dead: new Image()
 };
-
-// Always load the 92x92 version of Rui's images for both desktop and mobile
-const playerImageBase = 'image/rui_';
-const playerImageSuffix = '_92.png'; 
-
-playerImages.normal.src = playerImageBase + 'normal' + playerImageSuffix;
-playerImages.happy.src = playerImageBase + 'closing_eyes' + playerImageSuffix;
-playerImages.dead.src = playerImageBase + 'dead' + playerImageSuffix;
+playerImages.normal.src = 'image/rui_normal_92.png';
+playerImages.happy.src = 'image/rui_closing_eyes_92.png';
+playerImages.dead.src   = 'image/rui_dead_92.png';
 
 // Load good item images
 const goodItemImages = [
