@@ -2,7 +2,7 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 // Disable image smoothing for crisp pixel art, especially important when scaling
 // This will be overridden if high-res images are used on mobile and smoothing is desired.
-ctx.imageSmoothingEnabled = false;
+ctx.imageSmoothingEnabled = true;
 
 // Check if mobile device based on user agent
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -20,29 +20,13 @@ const playerImages = {
   dead: new Image()
 };
 
-// Define image paths based on device type
+// Always load the 92x92 version of Rui's images for both desktop and mobile
 const playerImageBase = 'image/rui_';
-// Changed highResSuffix to match user's provided file names (e.g., rui_normal_92.png)
-const highResSuffix = '_92.png'; 
-const lowResSuffix = '.png'; // Suffix for low-resolution images (e.g., 32x32)
+const playerImageSuffix = '_92.png'; 
 
-// Determine which image set to use
-if (isMobile) {
-  // For mobile, load the user-provided 92x92 high-resolution images for a smoother look
-  playerImages.normal.src = playerImageBase + 'normal' + highResSuffix;
-  playerImages.happy.src = playerImageBase + 'closing_eyes' + highResSuffix;
-  playerImages.dead.src = playerImageBase + 'dead' + highResSuffix;
-  // Enable image smoothing for smoother appearance when using high-res images
-  ctx.imageSmoothingEnabled = true; 
-} else {
-  // For desktop, use the original low-resolution images (assuming they are 32x32)
-  playerImages.normal.src = playerImageBase + 'normal' + lowResSuffix;
-  playerImages.happy.src = playerImageBase + 'closing_eyes' + lowResSuffix;
-  playerImages.dead.src = playerImageBase + 'dead' + lowResSuffix;
-  // Ensure image smoothing is off for crisp pixel art on desktop
-  ctx.imageSmoothingEnabled = false; 
-}
-
+playerImages.normal.src = playerImageBase + 'normal' + playerImageSuffix;
+playerImages.happy.src = playerImageBase + 'closing_eyes' + playerImageSuffix;
+playerImages.dead.src = playerImageBase + 'dead' + playerImageSuffix;
 
 // Load good item images
 const goodItemImages = [
@@ -88,7 +72,7 @@ const imagePromises = [
 // Game state variables
 const player = {
   // Initial position and size, will be adjusted by resizeCanvas and image loading
-  x: 0, y: 0, width: 96, height: 96, speed: 300, // Default width/height, will be adjusted
+  x: 160, y: 500, width: 96, height: 96, speed: 300, // Default width/height, will be adjusted
   state: 'normal', // 'normal', 'happy', 'dead'
   stateTimer: 0, // Timer for 'happy' state duration
   jumpOffset: 0, // Vertical offset for jump animation
@@ -449,10 +433,8 @@ Promise.all(imagePromises)
         player.width = 92; 
         player.height = 92;
     } else {
-        // For desktop, use the original pixel art size (e.g., 32x32)
-        // You might want to use playerImages.normal.naturalWidth for this too if your desktop images vary
-        player.width = 32; // Assuming your original desktop images are 32x32
-        player.height = 32; // Assuming your original desktop images are 32x32
+        player.width = 92; 
+        player.height = 92; 
     }
     
     resizeCanvas(); // Initial canvas size adjustment and player positioning after images load
